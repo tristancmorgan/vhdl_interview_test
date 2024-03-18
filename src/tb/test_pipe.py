@@ -3,66 +3,91 @@ import os
 import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge
-from cocotb.types import LogicArray
+from cocotb.types import LogicArray, Logic
 from cocotb.runner import get_runner
 
-import collections
+import pytest
 
-class ExpectQueue:
-    def __init__(self, name="expect_queue"):
-        self.queue = collections.deque()
-        self.name = name
+from bits_math import BitsMath
+from expect_queue import ExpectQueue
+from data_interface import DataDriver, DataMonitor
 
-    def expect(self, expectation):
-        print(f"{self.name}: Expecting {expectation}")
-        self.queue.append(expectation)
+import random
+import logging
 
-    def check(self, actual):
-        print(f"{self.name}: Checking {actual}")
-        assert len(self.queue) > 0, f"{self.name}: Unexpected actual: {actual}"
-        expected = self.queue.popleft()
-        assert expected == actual, f"{self.name}: Mismatch [E, R]: [{expected},{actual}]"
+log = logging.getLogger("cocotb")
 
-    def teardown(self):
-        assert len(self.queue) == 0, f"{self.name}: {len(self.queue)} expectations remaining after test"
-
+async def reset(dut):
+    dut.rst_i.value = 1
+    await RisingEdge(dut.clk_i)
+    dut.rst_i.value = 0
 
 @cocotb.test()
 async def pipe(dut):
     clock = Clock(dut.clk_i, 10, units="us")
     cocotb.start_soon(clock.start(start_high=False))
 
-    await RisingEdge(dut.clk_i)
+    monitor = DataMonitor(dut)
+    driver = DataDriver(dut)
 
-    expect_queue = ExpectQueue()
+    for _ in range(20):
+        if random.choice([True, False]):
+            log.debug(f"testing with reset")
+            expect_queue = ExpectQueue()
+            await reset(dut)
 
-    async def drive():
-        dut.data_i.value = 1
-        expect_queue.expect(1)
+            # Fill the expect queue with the reset values
+            for _ in range(dut.PIPE_DEPTH.value):
+                expect_queue.expect(BitsMath.clear(dut.DATA_WIDTH.value))
 
-        await RisingEdge(dut.clk_i)
+            monitor_coro = cocotb.start_soon(monitor.monitor(expect_queue))
 
-    async def monitor():
-        await RisingEdge(dut.clk_i)
-        expect_queue.check(dut.data_o.value)
+            for i in range(200):
+                stim = BitsMath.random(dut.DATA_WIDTH.value)
+                expect_queue.expect(stim)
+                await driver.drive(stim)
 
-    driver_coro = cocotb.start_soon(drive())
-    monitor_coro = cocotb.start_soon(monitor())
+            await RisingEdge(dut.clk_i)
+        else:
+            log.debug(f"testing without reset")
+            expect_queue = ExpectQueue()
 
-    await cocotb.triggers.Combine(cocotb.triggers.Join(driver_coro), cocotb.triggers.Join(monitor_coro))
+            async def do_drive():
+                for i in range(200):
+                    stim = BitsMath.random(dut.DATA_WIDTH.value)
+                    expect_queue.expect(stim)
+                    await driver.drive(stim)
+            
+            drive_coro = cocotb.start_soon(do_drive())
 
-    expect_queue.teardown()
-    
+            # Wait for the pipe to be full of known values before we start checking the output
+            for _ in range(dut.PIPE_DEPTH.value):
+                await RisingEdge(dut.clk_i)
 
+            monitor_coro = cocotb.start_soon(monitor.monitor(expect_queue))
 
+            await drive_coro
 
+        # Wait for the contents of the pipe to be flushed
+        for _ in range(dut.PIPE_DEPTH.value):
+            await RisingEdge(dut.clk_i)
 
+        monitor_coro.kill()
+        expect_queue.teardown()
 
-def test_pipe():
+@pytest.mark.parametrize(
+    "parameters", [
+        {"DATA_WIDTH": "1", "PIPE_DEPTH": "5"},
+        {"DATA_WIDTH": "32", "PIPE_DEPTH": "0"},
+        {"DATA_WIDTH": "32", "PIPE_DEPTH": "1"},
+        {"DATA_WIDTH": "32", "PIPE_DEPTH": "2"},
+        {"DATA_WIDTH": "32", "PIPE_DEPTH": "9"},
+    ]
+)
+def test_pipe(parameters):
     proj_path = os.path.dirname(os.path.dirname(__file__))
 
     sources = [os.path.abspath(os.path.join(proj_path, "hdl", "pipe.vhd"))]
-    print(sources)
 
     runner = get_runner("ghdl")
     runner.build(
@@ -76,5 +101,6 @@ def test_pipe():
         hdl_toplevel="pipe",
         test_module="test_pipe",
         test_args=["--std=08"],
-        plusargs=["-gPIPE_DEPTH=0", "-gDATA_WIDTH=1"]
+        plusargs=[f"-g{k}={v}" for k, v in parameters.items()]
     )
+

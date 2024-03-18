@@ -8,6 +8,8 @@ entity pipe is
     );
     port ( 
         clk_i   : in std_logic;
+        rst_i   : in std_logic;
+
         data_i  : in std_logic_vector(DATA_WIDTH - 1 downto 0);
         data_o  : out std_logic_vector(DATA_WIDTH - 1 downto 0)
     );
@@ -23,7 +25,11 @@ begin
     elsif PIPE_DEPTH = 1 generate
         p_pipe : process (clk_i) begin
             if rising_edge(clk_i) then
-                data_o <= data_i;
+                if rst_i then
+                    data_o <= ( others => '0' );
+                else
+                    data_o <= data_i;
+                end if;
             end if;
         end process;
     else generate
@@ -31,8 +37,12 @@ begin
     begin
         p_pipe : process (clk_i) begin
             if rising_edge(clk_i) then
-                pipe(pipe'right) <= data_i;
-                pipe(pipe'left downto 1) <= pipe(pipe'left - 1 downto 0);
+                if rst_i then
+                    pipe <= ( others => ( others => '0' ) );
+                else
+                    pipe(pipe'right) <= data_i;
+                    pipe(pipe'left downto 1) <= pipe(pipe'left - 1 downto 0);
+                end if;
             end if;
         end process;
 
