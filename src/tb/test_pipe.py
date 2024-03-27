@@ -8,9 +8,9 @@ from cocotb.runner import get_runner
 
 import pytest
 
-from bits_math import BitsMath
-from expect_queue import ExpectQueue
-from data_interface import DataDriver, DataMonitor
+from tools.test_utils.bits_math import BitsMath
+from tools.test_utils.expect_queue import ExpectQueue
+from tools.test_utils.interfaces.data_interface import DataDriver, DataMonitor
 
 import random
 import logging
@@ -99,7 +99,7 @@ def test_pipe(parameters):
 
     runner.test(
         hdl_toplevel="pipe",
-        test_module="test_pipe",
+        test_module="src.tb.test_pipe",
         test_args=["--std=08"],
         plusargs=[f"-g{k}={v}" for k, v in parameters.items()]
     )

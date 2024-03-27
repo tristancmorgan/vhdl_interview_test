@@ -1,7 +1,7 @@
-from metaclasses import MultipleMeta
+from tools.test_utils.metaclasses import MultipleMeta
 from cocotb.handle import HierarchyObject, ModifiableObject
 from cocotb.triggers import RisingEdge
-from bits_math import BitsMath
+from tools.test_utils.bits_math import BitsMath
 import logging
 
 log = logging.getLogger("cocotb")
