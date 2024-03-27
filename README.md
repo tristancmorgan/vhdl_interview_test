@@ -25,7 +25,7 @@ Some useful `pytest` basics:
 
 ## Step 3: Create a new module and testbench
 
-* Copy `reg_stage.vhd` and `test_reg_stage.py` either to the same place in the `examples` top-level-dir or to the `src` top-level-dir. Give them a name that reflects your new module's purpose, depending on the task you've been given by the tester.
+* Copy `reg_stage.vhd` and `test_reg_stage.py` either just next to where they are in the `examples` top-level-dir or to the `src` top-level-dir. Give them a name that reflects your new module's purpose, depending on the task you've been given by the tester.
 * Update the name of the your new module in the `*.vhd` file you just copied. Make it the same as the filename, without the `.vhd` extension.
 * Update the name of the test function and all the paths, DUT names, and module references in the `*.py` test file you just copied (just search for `reg_stage` and you should find all the places that need to change)
 * Run your new test on your new module to make sure all the plumbing is in place: `pytest -k "<your_test_name>`
