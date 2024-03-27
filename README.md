@@ -1,6 +1,6 @@
 # Quickstart Guide
 
-This repo contains VHDL basics and associated tests.
+This repo contains VHDL basics and associated tests. It's intended to provide an environment for testing FPGA candidates for Q*Bird.
 
 ## Step 1: Environment setup
 
@@ -23,16 +23,10 @@ Some useful `pytest` basics:
 * `pytest --collect-only`: just find all the tests and print a list
 * `pytest -k "<EXPRESSION>"`: run all tests whose name matches `EXPRESSION`. e.g. `pytest -k "pipe"`
 
-## Step 3: Create Your Profile
+## Step 3: Create a new module and testbench
 
-Complete your profile by adding relevant information such as your name, profile picture, and any other details you'd like to share.
-
-## Step 4: Get Started
-
-Now that you're all set up, dive into our platform and start using it for your needs. Whether it's connecting with others, sharing content, or exploring resources, the possibilities are endless!
-
-## Step 5: Reach Out for Help
-
-If you have any questions or need assistance, don't hesitate to reach out to our support team. We're here to help!
-
-That's it! You're ready to make the most of our platform. Happy exploring!
+* Copy `reg_stage.vhd` and `test_reg_stage.py` either to the same place in the `examples` top-level-dir or to the `src` top-level-dir. Give them a name that reflects your new module's purpose, depending on the task you've been given by the tester.
+* Update the name of the your new module in the `*.vhd` file you just copied. Make it the same as the filename, without the `.vhd` extension.
+* Update the name of the test function and all the paths, DUT names, and module references in the `*.py` test file you just copied (just search for `reg_stage` and you should find all the places that need to change)
+* Run your new test on your new module to make sure all the plumbing is in place: `pytest -k "<your_test_name>`
+* Start implementing actual new functionality and tests!

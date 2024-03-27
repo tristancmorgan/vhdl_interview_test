@@ -24,15 +24,13 @@ class DataDriver(metaclass=MultipleMeta):
         self.data.value = BitsMath.random(len(self.data))
 
 class DataMonitor(metaclass=MultipleMeta):
-    def __init__(self, clk:ModifiableObject, rst:ModifiableObject, data:ModifiableObject, name:str="data_monitor"):
+    def __init__(self, clk:ModifiableObject, data:ModifiableObject, name:str="data_monitor"):
         self.clk = clk
-        self.rst = rst
         self.data = data
         self.name = name    
 
     def __init__(self, dut:HierarchyObject, prefix:str="", name:str="data_monitor"):
         self.clk = getattr(dut, f"clk_i")
-        self.rst = getattr(dut, f"rst_i")
         self.data = getattr(dut, f"{prefix}data_o")
         self.name = name
 
@@ -40,9 +38,8 @@ class DataMonitor(metaclass=MultipleMeta):
         log.debug(f"{self.name}: starting recv")
         while True:
             await RisingEdge(self.clk)
-            if not self.rst.value:
-                log.debug(f"{self.name}: received {self.data.value} with type {type(self.data.value)}")
-                yield self.data.value
+            log.debug(f"{self.name}: received {self.data.value} with type {type(self.data.value)}")
+            yield self.data.value
 
     async def monitor(self, expect_queue):
         log.debug(f"{self.name}: starting monitor")

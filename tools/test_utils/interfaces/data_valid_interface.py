@@ -31,16 +31,14 @@ class DataValidDriver(metaclass=MultipleMeta):
         self.clear()
 
 class DataValidMonitor(metaclass=MultipleMeta):
-    def __init__(self, clk:ModifiableObject, rst:ModifiableObject, data:ModifiableObject, valid: ModifiableObject, name:str="data_valid_monitor"):
+    def __init__(self, clk:ModifiableObject, data:ModifiableObject, valid: ModifiableObject, name:str="data_valid_monitor"):
         self.clk = clk
-        self.rst = rst
         self.data = data
         self.valid = valid
         self.name = name    
 
     def __init__(self, dut:HierarchyObject, prefix:str="", name:str="data_valid_monitor"):
         self.clk = getattr(dut, f"clk_i")
-        self.rst = getattr(dut, f"rst_i")
         self.data = getattr(dut, f"{prefix}data_o")
         self.valid = getattr(dut, f"{prefix}valid_o")
         self.name = name
@@ -49,7 +47,7 @@ class DataValidMonitor(metaclass=MultipleMeta):
         log.debug(f"{self.name}: starting recv")
         while True:
             await RisingEdge(self.clk)
-            if not self.rst.value:
+            if self.valid.value == 1:
                 log.debug(f"{self.name}: received {self.data.value} with type {type(self.data.value)}")
                 yield self.data.value
 

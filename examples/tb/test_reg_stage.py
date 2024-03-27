@@ -23,7 +23,7 @@ async def reset(dut):
     dut.rst_i.value = 0
 
 @cocotb.test()
-async def pipe(dut):
+async def reg_stage(dut):
     clock = Clock(dut.clk_i, 10, units="us")
     cocotb.start_soon(clock.start(start_high=False))
 
@@ -31,7 +31,20 @@ async def pipe(dut):
     driver = DataValidDriver(dut)
 
     for _ in range(20):
-        
+        driver.clear()
+        for _ in range(20): await RisingEdge(dut.clk_i) # Wait for the DUT to reach a nice steady state before starting our monitor
+
+        expect_queue = ExpectQueue()
+        monitor_coroutine = cocotb.start_soon(monitor.monitor(expect_queue))
+
+        for _ in range(200):
+            stim = BitsMath.random(dut.DATA_WIDTH.value)
+            expect_queue.expect(stim)
+            await driver.drive(stim)
+
+        for _ in range(20): await RisingEdge(dut.clk_i) # Wait for all events to come out of the DUT
+
+        monitor_coroutine.kill()
         expect_queue.teardown()
 
 @pytest.mark.parametrize(
@@ -40,22 +53,22 @@ async def pipe(dut):
         {"DATA_WIDTH": "32"}
     ]
 )
-def test_register(parameters):
+def test_reg_stage(parameters):
     proj_path = os.path.dirname(os.path.dirname(__file__))
 
-    sources = [os.path.abspath(os.path.join(proj_path, "hdl", "register.vhd"))]
+    sources = [os.path.abspath(os.path.join(proj_path, "hdl", "reg_stage.vhd"))]
 
     runner = get_runner("ghdl")
     runner.build(
         vhdl_sources=sources,
         build_args=["--std=08"],
-        hdl_toplevel="register",
+        hdl_toplevel="reg_stage",
         always=True,
     )
 
     runner.test(
-        hdl_toplevel="pipe",
-        test_module="src.tb.test_register",
+        hdl_toplevel="reg_stage",
+        test_module="examples.tb.test_reg_stage",
         test_args=["--std=08"],
         plusargs=[f"-g{k}={v}" for k, v in parameters.items()]
     )
