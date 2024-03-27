@@ -3,7 +3,6 @@ import os
 import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge
-from cocotb.types import LogicArray, Logic
 from cocotb.runner import get_runner
 
 import pytest
@@ -12,15 +11,9 @@ from tools.test_utils.bits_math import BitsMath
 from tools.test_utils.expect_queue import ExpectQueue
 from tools.test_utils.interfaces.data_valid_interface import DataValidDriver, DataValidMonitor
 
-import random
 import logging
 
 log = logging.getLogger("cocotb")
-
-async def reset(dut):
-    dut.rst_i.value = 1
-    await RisingEdge(dut.clk_i)
-    dut.rst_i.value = 0
 
 @cocotb.test()
 async def reg_stage(dut):
