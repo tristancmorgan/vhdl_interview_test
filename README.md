@@ -1,6 +1,6 @@
 # Quickstart Guide
 
-This repo contains VHDL basics and associated tests. It's intended to provide an environment for testing FPGA candidates for Q*Bird.
+This repo contains VHDL examples and associated tests. It's intended to provide an environment for testing FPGA candidates.
 
 ## Step 1: Environment setup
 
